@@ -64,7 +64,7 @@ func (s *Storage) GetPallets(barcode string) ([]model.Pallet, error) {
 	var pallets = []model.Pallet{}
 	pallets, err = mapToPallets(rows)
 
-	if err := rows.Err(); err != nil {
+	if err != nil {
 		return nil, fmt.Errorf("getPalletByBarcode %q: %v", barcode, err)
 	}
 	return pallets, nil

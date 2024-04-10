@@ -99,6 +99,7 @@ func getAlbumsByID(w http.ResponseWriter, r *http.Request, storage *mysql.Storag
 
 	if err != nil {
 		fmt.Println(err)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
@@ -107,6 +108,7 @@ func getAlbumsByID(w http.ResponseWriter, r *http.Request, storage *mysql.Storag
 		data, err := json.Marshal(pallet)
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
 
