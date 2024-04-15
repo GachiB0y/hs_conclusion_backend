@@ -63,7 +63,9 @@ func main() {
 	r.Get("/pallet", func(w http.ResponseWriter, r *http.Request) {
 		getAlbumsByID(w, r, storage)
 	})
-	r.Post("/pallet", postAlbums)
+	r.Post("/pallet", func(w http.ResponseWriter, r *http.Request) {
+		postAlbums(w, r, storage)
+	})
 
 	// Use a WaitGroup to wait for all goroutines to finish
 	var wg sync.WaitGroup
@@ -120,16 +122,23 @@ func getAlbumsByID(w http.ResponseWriter, r *http.Request, storage *mysql.Storag
 }
 
 // postAlbums adds an album from JSON received in the request body.
-func postAlbums(w http.ResponseWriter, r *http.Request) {
+func postAlbums(w http.ResponseWriter, r *http.Request, storage *mysql.Storage) {
 	var newAlbum model.Pallet
 	err := json.NewDecoder(r.Body).Decode(&newAlbum)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var cachePallets = make([]model.Pallet, 0, 1)
 
-	cachePallets = append(cachePallets, newAlbum)
+	errTwo := storage.InsertDataIntoDB(newAlbum)
+	if errTwo != nil {
+		http.Error(w, errTwo.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// var cachePallets = make([]model.Pallet, 0, 1)
+
+	// cachePallets = append(cachePallets, newAlbum)
 	// Далее можно использовать newAlbum для выполнения необходимых операций, например сохранения в базу данных
 
 	w.WriteHeader(http.StatusCreated)

@@ -16,11 +16,11 @@ type Storage struct {
 }
 
 func New() (*Storage, error) {
-	const op = "storage.mysql.NewStorage" // Имя текущей функции для логов и ошибок
+	const op = "storage.mssql.NewStorage" // Имя текущей функции для логов и ошибок
 
 	server := "wms.grass.local"
-	user := "user_apisrv"
-	password := "1TrololoshkA1"
+	user := "user_user"
+	password := "lolololollo"
 	database := "wms"
 
 	connString := fmt.Sprintf("server=%s;user id=%s;password=%s;database=%s", server, user, password, database)
@@ -111,4 +111,61 @@ func mapToPallets(rows *sql.Rows) ([]model.Pallet, error) {
 	}
 
 	return pallets, nil
+}
+
+func (s *Storage) InsertDataIntoDB(pallet model.Pallet) error {
+	// Begin a database transaction
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	connString := fmt.Sprintf(`INSERT INTO r_QrCodeUpdate (cCodeShort, idQrParent) VALUES (%s, 0)`, pallet.Barcode)
+	// Insert Pallet data
+	_, err =
+		tx.Exec(connString)
+		// tx.Exec("INSERT INTO r_QrCodeUpdate (cCodeShort, idQrParent) VALUES (?,0)", pallet.Barcode)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	// Get Pallet ID in table
+	// palletID, err := result.LastInsertId()
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return err
+	// }
+
+	// Insert Box data
+	for _, box := range pallet.Items {
+		_, err := tx.Exec("INSERT INTO r_QrCodeUpdate (cCodeShort, idQrParent) VALUES (@boxBarcode, @idParent)", sql.Named("boxBarcode", box.Barcode), sql.Named("idParent", pallet.Barcode))
+
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		// Get Box ID in table
+		// boxID, err := result.LastInsertId()
+		// if err != nil {
+		// 	tx.Rollback()
+		// 	return err
+		// }
+
+		// Insert Item data
+		for _, item := range box.Items {
+			_, err := tx.Exec("INSERT INTO r_QrCodeUpdate (cCodeShort, idQrParent) VALUES (@itemBarcode, @idParent)", sql.Named("itemBarcode", item.Barcode), sql.Named("idParent", box.Barcode))
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	// Commit the transaction if all inserts were successful
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
